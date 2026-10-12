@@ -45,6 +45,12 @@
         </section>
 
         <section class="card">
+            <div class="report-link">
+    <a href="{{ url_for('student_report') }}">
+        View Student Attendance Reports
+    </a>
+</div>
+
             <h2>Students and Attendance</h2>
             {% if students %}
             <div class="table-wrap">

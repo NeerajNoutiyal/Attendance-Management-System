@@ -144,6 +144,54 @@ def mark_attendance():
 
     return redirect(url_for("index"))
 
+@app.route("/student_report")
+def student_report():
+    roll_no = request.args.get("roll_no", "").strip()
+    report = []
+    student = None
+    total_days = 0
+    present_days = 0
+    absent_days = 0
+
+    with get_db() as db:
+        students = db.execute(
+            "SELECT id, name, roll_no, course FROM students ORDER BY name"
+        ).fetchall()
+
+        if roll_no:
+            student = db.execute(
+                "SELECT id, name, roll_no, course FROM students WHERE roll_no = ?",
+                (roll_no,)
+            ).fetchone()
+
+            if student:
+                report = db.execute("""
+                    SELECT date, status
+                    FROM attendance
+                    WHERE student_id = ?
+                    ORDER BY date DESC
+                """, (student["id"],)).fetchall()
+
+                total_days = len(report)
+                present_days = sum(
+                    1 for record in report
+                    if record["status"] == "Present"
+                )
+                absent_days = sum(
+                    1 for record in report
+                    if record["status"] == "Absent"
+                )
+
+    return render_template(
+        "student_report.html",
+        students=students,
+        student=student,
+        report=report,
+        total_days=total_days,
+        present_days=present_days,
+        absent_days=absent_days
+    )
+
 
 if __name__ == "__main__":
     initialize_db()
