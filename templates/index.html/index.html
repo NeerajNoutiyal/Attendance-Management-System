@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Attendance Management System</h1>
+        <p>TQM Project — Accurate, organized attendance records</p>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>Add Student</h2>
+            <form action="{{ url_for('add_student') }}" method="post">
+                <input name="name" placeholder="Student name" required>
+                <input name="roll_no" placeholder="Roll number" required>
+                <input name="course" placeholder="Course / Class" required>
+                <button type="submit">Add Student</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Students and Attendance</h2>
+            {% if students %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Roll Number</th>
+                            <th>Course</th>
+                            <th>Mark Attendance Today</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.roll_no }}</td>
+                            <td>{{ student.course }}</td>
+                            <td>
+                                <form action="{{ url_for('mark_attendance') }}" method="post">
+                                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                                    <button name="status" value="Present">Present</button>
+                                    <button name="status" value="Absent" class="absent">Absent</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No students yet. Add your first student above.</p>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2>Recent Attendance</h2>
+            {% if records %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Student</th>
+                            <th>Roll Number</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.date }}</td>
+                            <td>{{ record.name }}</td>
+                            <td>{{ record.roll_no }}</td>
+                            <td>{{ record.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No attendance has been recorded yet.</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>
