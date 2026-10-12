@@ -1,6 +1,8 @@
+
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from pathlib import Path
+from datetime import date
 
 app = Flask(__name__)
 DB_PATH = Path(__file__).with_name("attendance.db")
@@ -34,25 +36,35 @@ def initialize_db():
         """)
 
 
-
 @app.route("/")
 def index():
-    from datetime import date
-
     today = date.today().isoformat()
+    selected_date = request.args.get("date", "").strip()
+    search = request.args.get("search", "").strip()
 
     with get_db() as db:
         students = db.execute(
             "SELECT * FROM students ORDER BY name"
         ).fetchall()
 
-        records = db.execute("""
+        query = """
             SELECT a.date, a.status, s.name, s.roll_no
             FROM attendance a
             JOIN students s ON s.id = a.student_id
-            ORDER BY a.date DESC, s.name
-            LIMIT 10
-        """).fetchall()
+            WHERE 1=1
+        """
+        params = []
+
+        if selected_date:
+            query += " AND a.date = ?"
+            params.append(selected_date)
+
+        if search:
+            query += " AND (s.name LIKE ? OR s.roll_no LIKE ?)"
+            params.extend([f"%{search}%", f"%{search}%"])
+
+        query += " ORDER BY a.date DESC, s.name LIMIT 100"
+        records = db.execute(query, params).fetchall()
 
         total_students = db.execute(
             "SELECT COUNT(*) FROM students"
@@ -80,9 +92,10 @@ def index():
         total_students=total_students,
         present_today=present_today,
         absent_today=absent_today,
-        attendance_rate=attendance_rate
+        attendance_rate=attendance_rate,
+        selected_date=selected_date,
+        search=search
     )
-
 
 
 @app.route("/add_student", methods=["POST"])
@@ -108,8 +121,6 @@ def add_student():
 
 @app.route("/mark_attendance", methods=["POST"])
 def mark_attendance():
-    from datetime import date
-
     student_id = request.form.get("student_id", type=int)
     status = request.form.get("status", "")
 

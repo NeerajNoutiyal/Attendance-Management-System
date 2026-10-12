@@ -81,6 +81,27 @@
         </section>
 
         <section class="card">
+            
+<h2>Search Attendance Records</h2>
+
+<form method="GET" action="{{ url_for('index') }}">
+    <input
+        type="text"
+        name="search"
+        placeholder="Search student name or roll number"
+        value="{{ search }}"
+    >
+
+    <input
+        type="date"
+        name="date"
+        value="{{ selected_date }}"
+    >
+
+    <button type="submit">Search / Filter</button>
+    <a href="{{ url_for('index') }}">Clear Filters</a>
+</form>
+
             <h2>Recent Attendance</h2>
             {% if records %}
             <div class="table-wrap">
