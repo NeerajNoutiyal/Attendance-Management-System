@@ -1,10 +1,18 @@
+
 import csv
-from io import StringIO
-from flask import Response
-from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
+from io import StringIO
 from pathlib import Path
 from datetime import date
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    Response
+)
 
 app = Flask(__name__)
 DB_PATH = Path(__file__).with_name("attendance.db")
@@ -26,12 +34,14 @@ def initialize_db():
                 course TEXT NOT NULL
             )
         """)
+
         db.execute("""
             CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 student_id INTEGER NOT NULL,
                 date TEXT NOT NULL,
-                status TEXT NOT NULL CHECK(status IN ('Present', 'Absent')),
+                status TEXT NOT NULL
+                    CHECK(status IN ('Present', 'Absent')),
                 UNIQUE(student_id, date),
                 FOREIGN KEY(student_id) REFERENCES students(id)
             )
@@ -66,6 +76,7 @@ def index():
             params.extend([f"%{search}%", f"%{search}%"])
 
         query += " ORDER BY a.date DESC, s.name LIMIT 100"
+
         records = db.execute(query, params).fetchall()
 
         total_students = db.execute(
@@ -112,7 +123,10 @@ def add_student():
     try:
         with get_db() as db:
             db.execute(
-                "INSERT INTO students (name, roll_no, course) VALUES (?, ?, ?)",
+                """
+                INSERT INTO students (name, roll_no, course)
+                VALUES (?, ?, ?)
+                """,
                 (name, roll_no, course)
             )
     except sqlite3.IntegrityError:
@@ -131,7 +145,8 @@ def mark_attendance():
 
     with get_db() as db:
         student = db.execute(
-            "SELECT id FROM students WHERE id = ?", (student_id,)
+            "SELECT id FROM students WHERE id = ?",
+            (student_id,)
         ).fetchone()
 
         if student is None:
@@ -146,23 +161,34 @@ def mark_attendance():
 
     return redirect(url_for("index"))
 
+
 @app.route("/student_report")
 def student_report():
     roll_no = request.args.get("roll_no", "").strip()
+
     report = []
     student = None
     total_days = 0
     present_days = 0
     absent_days = 0
+    attendance_percentage = 0
 
     with get_db() as db:
         students = db.execute(
-            "SELECT id, name, roll_no, course FROM students ORDER BY name"
+            """
+            SELECT id, name, roll_no, course
+            FROM students
+            ORDER BY name
+            """
         ).fetchall()
 
         if roll_no:
             student = db.execute(
-                "SELECT id, name, roll_no, course FROM students WHERE roll_no = ?",
+                """
+                SELECT id, name, roll_no, course
+                FROM students
+                WHERE roll_no = ?
+                """,
                 (roll_no,)
             ).fetchone()
 
@@ -175,14 +201,21 @@ def student_report():
                 """, (student["id"],)).fetchall()
 
                 total_days = len(report)
+
                 present_days = sum(
                     1 for record in report
                     if record["status"] == "Present"
                 )
+
                 absent_days = sum(
                     1 for record in report
                     if record["status"] == "Absent"
                 )
+
+                if total_days > 0:
+                    attendance_percentage = round(
+                        present_days / total_days * 100, 2
+                    )
 
     return render_template(
         "student_report.html",
@@ -191,7 +224,8 @@ def student_report():
         report=report,
         total_days=total_days,
         present_days=present_days,
-        absent_days=absent_days
+        absent_days=absent_days,
+        attendance_percentage=attendance_percentage
     )
 
 
@@ -200,7 +234,13 @@ def export_attendance():
     output = StringIO()
     writer = csv.writer(output)
 
-    writer.writerow(["Date", "Student Name", "Roll Number", "Course", "Status"])
+    writer.writerow([
+        "Date",
+        "Student Name",
+        "Roll Number",
+        "Course",
+        "Status"
+    ])
 
     with get_db() as db:
         records = db.execute("""
@@ -223,9 +263,11 @@ def export_attendance():
         "\ufeff" + output.getvalue(),
         mimetype="text/csv",
         headers={
-            "Content-Disposition": "attachment; filename=attendance_report.csv"
+            "Content-Disposition":
+                "attachment; filename=attendance_report.csv"
         }
     )
+
 
 if __name__ == "__main__":
     initialize_db()
