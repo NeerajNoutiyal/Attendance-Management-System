@@ -15,6 +15,26 @@
 
     <main>
         <section class="card">
+            <div class="stats-container">
+    <div class="stat-card total-card">
+        <h3>Total Students</h3>
+        <p>{{ total_students }}</p>
+    </div>
+    <div class="stat-card present-card">
+        <h3>Present Today</h3>
+        <p>{{ present_today }}</p>
+    </div>
+    <div class="stat-card absent-card">
+        <h3>Absent Today</h3>
+        <p>{{ absent_today }}</p>
+    </div>
+    <div class="stat-card rate-card">
+        <h3>Attendance Rate</h3>
+        <p>{{ attendance_rate }}%</p>
+    </div>
+</div>
+
+
             <h2>Add Student</h2>
             <form action="{{ url_for('add_student') }}" method="post">
                 <input name="name" placeholder="Student name" required>

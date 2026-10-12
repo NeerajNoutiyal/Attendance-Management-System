@@ -88,3 +88,39 @@ tr:hover td {
         padding: 8px;
     }
 }
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin: 25px 0;
+}
+
+.stat-card {
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+    border-left: 5px solid #2563eb;
+}
+
+.stat-card h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: #475569;
+}
+
+.stat-card p {
+    margin: 0;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.present-card { border-left-color: #16a34a; }
+.absent-card { border-left-color: #dc2626; }
+.rate-card { border-left-color: #9333ea; }
+
+@media (max-width: 700px) {
+    .stats-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

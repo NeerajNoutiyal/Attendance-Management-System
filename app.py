@@ -34,12 +34,18 @@ def initialize_db():
         """)
 
 
+
 @app.route("/")
 def index():
+    from datetime import date
+
+    today = date.today().isoformat()
+
     with get_db() as db:
         students = db.execute(
             "SELECT * FROM students ORDER BY name"
         ).fetchall()
+
         records = db.execute("""
             SELECT a.date, a.status, s.name, s.roll_no
             FROM attendance a
@@ -48,9 +54,35 @@ def index():
             LIMIT 10
         """).fetchall()
 
-    return render_template(
-        "index.html", students=students, records=records
+        total_students = db.execute(
+            "SELECT COUNT(*) FROM students"
+        ).fetchone()[0]
+
+        present_today = db.execute("""
+            SELECT COUNT(*) FROM attendance
+            WHERE date = ? AND status = 'Present'
+        """, (today,)).fetchone()[0]
+
+        absent_today = db.execute("""
+            SELECT COUNT(*) FROM attendance
+            WHERE date = ? AND status = 'Absent'
+        """, (today,)).fetchone()[0]
+
+    attendance_rate = (
+        round(present_today / total_students * 100)
+        if total_students else 0
     )
+
+    return render_template(
+        "index.html",
+        students=students,
+        records=records,
+        total_students=total_students,
+        present_today=present_today,
+        absent_today=absent_today,
+        attendance_rate=attendance_rate
+    )
+
 
 
 @app.route("/add_student", methods=["POST"])
