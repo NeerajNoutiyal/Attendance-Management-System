@@ -50,7 +50,9 @@
         View Student Attendance Reports
     </a>
 </div>
-
+<div class="report-link">
+    <a href="{{ url_for('export_attendance') }}">Download Attendance CSV</a>
+</div>
             <h2>Students and Attendance</h2>
             {% if students %}
             <div class="table-wrap">

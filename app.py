@@ -1,4 +1,6 @@
-
+import csv
+from io import StringIO
+from flask import Response
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from pathlib import Path
@@ -192,6 +194,38 @@ def student_report():
         absent_days=absent_days
     )
 
+
+@app.route("/export_attendance")
+def export_attendance():
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Date", "Student Name", "Roll Number", "Course", "Status"])
+
+    with get_db() as db:
+        records = db.execute("""
+            SELECT a.date, s.name, s.roll_no, s.course, a.status
+            FROM attendance a
+            JOIN students s ON s.id = a.student_id
+            ORDER BY a.date DESC, s.name
+        """).fetchall()
+
+        for record in records:
+            writer.writerow([
+                record["date"],
+                record["name"],
+                record["roll_no"],
+                record["course"],
+                record["status"]
+            ])
+
+    return Response(
+        "\ufeff" + output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=attendance_report.csv"
+        }
+    )
 
 if __name__ == "__main__":
     initialize_db()
