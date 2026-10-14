@@ -5,73 +5,217 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Attendance Report</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #243247;
+            margin: 0;
+            padding: 25px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: auto;
+        }
+
+        h1, h2 {
+            color: #174ea6;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            margin: 18px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #00000010;
+        }
+
+        input, select, button, .button {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccd5e0;
+            font-size: 15px;
+        }
+
+        button, .button {
+            background: #1769d2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .stat {
+            background: #eef5ff;
+            padding: 18px;
+            border-radius: 8px;
+        }
+
+        .number {
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .warning {
+            background: #fff0f0;
+            color: #a51d1d;
+            padding: 14px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .good {
+            background: #e8f7ed;
+            color: #176b35;
+            padding: 14px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5eaf0;
+        }
+
+        th {
+            background: #eaf2ff;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        a.back {
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
+
 <body>
-    <header>
-        <h1>Student Attendance Report</h1>
-        <p>View attendance history for an individual student</p>
-    </header>
+<div class="container">
 
-    <main>
-        <section class="card">
-            <h2>Select Student</h2>
-            <form method="GET" action="{{ url_for('student_report') }}">
-                <select name="roll_no" required>
-                    <option value="">Choose a student</option>
-                    {% for item in students %}
-                    <option value="{{ item.roll_no }}"
-                        {% if student and student.roll_no == item.roll_no %}selected{% endif %}>
-                        {{ item.name }} — {{ item.roll_no }}
-                    </option>
+    <a class="button back" href="{{ url_for('index') }}">
+        Back to Dashboard
+    </a>
+
+    <h1>Student Attendance Report</h1>
+
+    <div class="card">
+        <h2>Select Student</h2>
+
+        <form action="{{ url_for('student_report') }}" method="GET">
+            <label for="roll_no">Student roll number:</label>
+            <select id="roll_no" name="roll_no" required>
+                <option value="">-- Select Student --</option>
+
+                {% for s in students %}
+                <option value="{{ s['roll_no'] }}"
+                    {% if student and student['roll_no'] == s['roll_no'] %}
+                    selected
+                    {% endif %}>
+                    {{ s['name'] }} ({{ s['roll_no'] }})
+                </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">View Report</button>
+        </form>
+    </div>
+
+    {% if student %}
+    <div class="card">
+        <h2>{{ student['name'] }}</h2>
+        <p><strong>Roll Number:</strong> {{ student['roll_no'] }}</p>
+        <p><strong>Course:</strong> {{ student['course'] }}</p>
+
+        <div class="stats">
+            <div class="stat">
+                <div>Total Classes</div>
+                <div class="number">{{ total_days }}</div>
+            </div>
+
+            <div class="stat">
+                <div>Present</div>
+                <div class="number">{{ present_days }}</div>
+            </div>
+
+            <div class="stat">
+                <div>Absent</div>
+                <div class="number">{{ absent_days }}</div>
+            </div>
+
+            <div class="stat">
+                <div>Attendance</div>
+                <div class="number">{{ attendance_percentage }}%</div>
+            </div>
+        </div>
+
+        {% if total_days == 0 %}
+            <p>No attendance records are available for this student yet.</p>
+        {% elif attendance_percentage < 75 %}
+            <div class="warning">
+                <strong>Low Attendance Warning!</strong>
+                Attendance is below 75%. The student may need to attend
+                more classes to meet the required threshold.
+            </div>
+        {% else %}
+            <div class="good">
+                <strong>Attendance Requirement Met.</strong>
+                The recorded attendance is at least 75%.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Attendance History</h2>
+
+        {% if report %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for record in report %}
+                    <tr>
+                        <td>{{ record['date'] }}</td>
+                        <td>{{ record['status'] }}</td>
+                    </tr>
                     {% endfor %}
-                </select>
-                <button type="submit">View Report</button>
-            </form>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p>No attendance history found.</p>
+        {% endif %}
+    </div>
+    {% elif request.args.get('roll_no') %}
+        <div class="card">
+            Student not found. Please select a valid student.
+        </div>
+    {% endif %}
 
-            {% if student %}
-                <h2>{{ student.name }}</h2>
-                <p>Roll Number: {{ student.roll_no }} | Course: {{ student.course }}</p>
-
-                <div class="stats-container">
-                    <div class="stat-card total-card">
-                        <h3>Recorded Days</h3>
-                        <p>{{ total_days }}</p>
-                    </div>
-                    <div class="stat-card present-card">
-                        <h3>Present</h3>
-                        <p>{{ present_days }}</p>
-                    </div>
-                    <div class="stat-card absent-card">
-                        <h3>Absent</h3>
-                        <p>{{ absent_days }}</p>
-                    </div>
-                </div>
-
-                <h2>Attendance History</h2>
-                {% if report %}
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr><th>Date</th><th>Status</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for record in report %}
-                            <tr>
-                                <td>{{ record.date }}</td>
-                                <td>{{ record.status }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p>No attendance records found for this student.</p>
-                {% endif %}
-            {% endif %}
-
-            <p><a href="{{ url_for('index') }}">← Back to Dashboard</a></p>
-        </section>
-    </main>
+</div>
 </body>
 </html>
