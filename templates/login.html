@@ -1,173 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Login | Attendance Management System</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
-
-    <style>
-        .role-options {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .role-option {
-            padding: 12px 5px;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
-            background: #fff;
-            color: #374151;
-            transition: 0.2s ease;
-        }
-
-        .role-option:has(input:checked) {
-            border: 2px solid #2563eb;
-            background: #eff6ff;
-            color: #1d4ed8;
-            font-weight: bold;
-        }
-
-        .role-option input {
-            margin-right: 4px;
-            cursor: pointer;
-        }
-
-        .login-container label.field-label {
-            display: block;
-            margin: 12px 0 6px;
-            text-align: left;
-        }
-
-        .login-container input[type="text"],
-        .login-container input[type="password"] {
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .login-subtitle {
-            color: #6b7280;
-        }
-
-        .flash {
-            padding: 10px;
-            margin: 12px 0;
-            border-radius: 6px;
-        }
-
-        .flash.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .flash.success {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .login-button {
-            width: 100%;
-            margin-top: 18px;
-            cursor: pointer;
-        }
-
-        @media (max-width: 360px) {
-            .role-options {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f7ff">
+  <title>Sign in | AttendFlow</title>
+  <style>
+    :root{color-scheme:light;--page:#f4f6fc;--card:#fff;--ink:#17213a;--muted:#778198;--line:#e3e8f2;--primary:#4f46e5;--primary2:#6d63f6;--soft:#eef0ff;--shadow:0 24px 70px rgba(37,48,91,.13);--field:#fbfcff}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:28px;overflow-x:hidden}
+    body:before,body:after{content:"";position:fixed;border-radius:50%;filter:blur(2px);pointer-events:none;z-index:-1}
+    body:before{width:430px;height:430px;left:-170px;top:-170px;background:radial-gradient(circle,rgba(99,102,241,.18),transparent 68%)}
+    body:after{width:520px;height:520px;right:-210px;bottom:-250px;background:radial-gradient(circle,rgba(14,165,233,.15),transparent 68%)}
+    .login-layout{width:min(1080px,100%);min-height:650px;display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid rgba(255,255,255,.8);border-radius:28px;overflow:hidden;box-shadow:var(--shadow);animation:rise .55s ease both}
+    .brand-panel{position:relative;overflow:hidden;padding:48px 46px;background:linear-gradient(145deg,#24256e 0%,#4338ca 53%,#625cf4 100%);color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:650px}
+    .brand-panel:before{content:"";position:absolute;width:370px;height:370px;border:1px solid rgba(255,255,255,.14);border-radius:50%;right:-160px;top:100px;box-shadow:0 0 0 42px rgba(255,255,255,.035),0 0 0 85px rgba(255,255,255,.025)}
+    .brand-panel:after{content:"";position:absolute;width:250px;height:250px;border-radius:50%;background:rgba(255,255,255,.06);bottom:-140px;left:-70px}
+    .brand,.brand-copy,.visual-card,.brand-footer{position:relative;z-index:1}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:21px;letter-spacing:-.6px}
+    .brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);font-size:21px}
+    .brand-name span{color:#c7d2fe}.brand-caption{display:block;margin-top:3px;font-size:10px;letter-spacing:2px;font-weight:700;color:#c7d2fe}
+    .brand-copy{margin-top:52px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:2.2px;color:#c7d2fe;text-transform:uppercase}
+    .brand-copy h1{font-size:clamp(32px,4vw,47px);line-height:1.12;letter-spacing:-1.6px;margin:17px 0 18px;max-width:410px}
+    .brand-copy p{color:#e0e7ff;font-size:15px;line-height:1.8;max-width:380px;margin:0}
+    .visual-card{margin-top:42px;padding:22px;border-radius:20px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.19);backdrop-filter:blur(10px);max-width:390px}
+    .visual-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#e0e7ff}.live-dot{display:inline-block;width:7px;height:7px;background:#6ee7b7;border-radius:50%;margin-right:7px;box-shadow:0 0 0 4px rgba(110,231,183,.13)}
+    .visual-number{font-size:30px;font-weight:800;margin:16px 0 4px;letter-spacing:-1px}.visual-sub{font-size:12px;color:#dbeafe}
+    .mini-bars{height:60px;display:flex;align-items:end;gap:8px;margin-top:16px}.mini-bars span{flex:1;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#a5b4fc,#c4b5fd);opacity:.9}.mini-bars span:nth-child(1){height:35%}.mini-bars span:nth-child(2){height:52%}.mini-bars span:nth-child(3){height:43%}.mini-bars span:nth-child(4){height:72%}.mini-bars span:nth-child(5){height:60%}.mini-bars span:nth-child(6){height:86%}.mini-bars span:nth-child(7){height:70%}.brand-footer{font-size:11px;color:#c7d2fe;margin-top:34px}
+    .form-panel{padding:54px clamp(28px,5vw,64px);display:flex;flex-direction:column;justify-content:center;min-width:0}
+    .form-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:38px}.secure-label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}.secure-icon{width:27px;height:27px;display:grid;place-items:center;border-radius:9px;background:var(--soft);color:var(--primary);font-size:14px}
+    .form-panel h2{font-size:30px;letter-spacing:-1px;margin:0 0 9px}.intro{color:var(--muted);font-size:14px;line-height:1.65;margin:0 0 27px}
+    .flash{padding:12px 14px;margin:0 0 17px;border-radius:12px;font-size:13px;line-height:1.5;border:1px solid transparent}.flash.error{background:#fff0f0;color:#a92c36;border-color:#ffd7d9}.flash.success{background:#ecfdf5;color:#08794e;border-color:#bbf7d0}.flash.warning{background:#fffbeb;color:#92400e;border-color:#fde68a}.flash.info{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+    .field-title{display:block;font-size:12px;font-weight:750;margin:0 0 10px;color:#34405b}.role-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+    .role-option{position:relative;display:flex;align-items:center;gap:10px;padding:14px 12px;border:1px solid var(--line);border-radius:13px;background:var(--field);cursor:pointer;transition:border-color .2s,background .2s,transform .2s;min-width:0}
+    .role-option:hover{border-color:#a5b4fc;transform:translateY(-1px)}.role-option:has(input:checked){border-color:var(--primary);background:var(--soft);box-shadow:0 0 0 2px rgba(79,70,229,.08)}
+    .role-option input{accent-color:var(--primary);margin:0;width:16px;height:16px;flex-shrink:0}.role-text{font-size:12px;font-weight:750;line-height:1.4}.role-sub{display:block;font-size:10px;font-weight:500;color:var(--muted);margin-top:2px}
+    .field{margin-bottom:19px}.input-wrap{position:relative}.field input{width:100%;height:49px;border:1px solid var(--line);border-radius:12px;background:var(--field);padding:0 14px;color:var(--ink);font:inherit;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}.field input::placeholder{color:#a0a8b9}.field input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(79,70,229,.10)}.field input[type=password],.field input.password-visible{padding-right:76px}
+    .show-password{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--primary);font-size:11px;font-weight:750;cursor:pointer;padding:7px}
+    .login-button{width:100%;height:50px;border:0;border-radius:12px;background:linear-gradient(100deg,#4f46e5,#635bfa);color:#fff;font-weight:800;font-size:13px;letter-spacing:.1px;cursor:pointer;box-shadow:0 9px 20px rgba(79,70,229,.22);transition:transform .2s,box-shadow .2s;margin-top:3px}.login-button:hover{transform:translateY(-2px);box-shadow:0 13px 25px rgba(79,70,229,.3)}.login-button:active{transform:translateY(0)}.login-button:disabled{opacity:.7;cursor:wait}
+    .form-note{margin:22px 0 0;text-align:center;color:var(--muted);font-size:11px;line-height:1.7}.form-note strong{color:#4b5570}.form-bottom{border-top:1px solid var(--line);margin-top:30px;padding-top:17px;display:flex;justify-content:space-between;gap:10px;color:#9aa3b5;font-size:10px}
+    @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:760px){body{padding:14px}.login-layout{grid-template-columns:1fr;max-width:480px;min-height:0;border-radius:22px}.brand-panel{min-height:0;padding:26px 28px 28px}.brand-copy{margin-top:30px}.brand-copy h1{font-size:32px;max-width:350px}.brand-copy p{font-size:13px}.visual-card{display:none}.brand-footer{margin-top:28px}.form-panel{padding:32px 28px 28px}.form-top{margin-bottom:27px}.form-panel h2{font-size:27px}}
+    @media(max-width:380px){body{padding:8px}.brand-panel{padding:22px}.form-panel{padding:27px 20px}.role-options{gap:8px}.role-option{padding:12px 8px}.role-text{font-size:11px}.form-bottom{flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+  </style>
 </head>
-
 <body>
-    <div class="login-container">
+  <main class="login-layout">
+    <section class="brand-panel" aria-label="AttendFlow introduction">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">A</div>
+        <div class="brand-name">Attend<span>Flow</span><small class="brand-caption">ATTENDANCE MANAGEMENT</small></div>
+      </div>
+      <div class="brand-copy">
+        <div class="eyebrow">A smarter way to manage attendance</div>
+        <h1>Every class.<br>Every presence.<br>All in one place.</h1>
+        <p>Keep student records organized, track attendance, and get a clearer view of classroom activity from one simple workspace.</p>
+        <div class="visual-card" aria-label="Illustrative attendance activity card">
+          <div class="visual-head"><span><i class="live-dot"></i>Attendance activity</span><span>Weekly view</span></div>
+          <div class="visual-number">Stay on track.</div>
+          <div class="visual-sub">A clear overview for better decisions.</div>
+          <div class="mini-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="brand-footer">Simple records. Better visibility. &copy; <span id="year"></span> AttendFlow</div>
+    </section>
 
-        <h1>Welcome Back</h1>
+    <section class="form-panel" aria-labelledby="login-heading">
+      <div class="form-top"><span class="secure-label"><span class="secure-icon" aria-hidden="true">✓</span> Secure sign in</span></div>
+      <h2 id="login-heading">Welcome back</h2>
+      <p class="intro">Sign in to continue to your Attendance Management workspace.</p>
 
-        <p class="login-subtitle">
-            Attendance Management System
-        </p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-                <div class="flash {{ category }}" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endwith %}
+      <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+        <span class="field-title" id="role-label">Choose your account</span>
+        <div class="role-options" role="group" aria-labelledby="role-label">
+          <label class="role-option">
+            <input type="radio" name="role" value="admin" checked required>
+            <span class="role-text">Admin / Teacher<span class="role-sub">Manage attendance</span></span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="role" value="student" required>
+            <span class="role-text">Student<span class="role-sub">View your report</span></span>
+          </label>
+        </div>
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <div class="field">
+          <label class="field-title" for="user_id">Username or roll number</label>
+          <input type="text" id="user_id" name="user_id" placeholder="Enter your username or roll number" autocomplete="username" required autofocus>
+        </div>
+        <div class="field">
+          <label class="field-title" for="password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button class="show-password" type="button" id="togglePassword" aria-controls="password" aria-label="Show password">Show</button>
+          </div>
+        </div>
+        <button type="submit" class="login-button" id="loginButton">Sign in securely <span aria-hidden="true">→</span></button>
+      </form>
 
-            <p><strong>Choose your account type</strong></p>
-
-            <div class="role-options">
-
-                <label class="role-option">
-                    <input
-                        type="radio"
-                        name="role"
-                        value="admin"
-                        checked
-                        required
-                    >
-                    Admin / Teacher
-                </label>
-
-                <label class="role-option">
-                    <input
-                        type="radio"
-                        name="role"
-                        value="student"
-                        required
-                    >
-                    Student
-                </label>
-
-            </div>
-
-            <label class="field-label" for="user_id">
-                User ID
-            </label>
-
-            <input
-                type="text"
-                id="user_id"
-                name="user_id"
-                placeholder="Enter your username or roll number"
-                autocomplete="username"
-                required
-            >
-
-            <label class="field-label" for="password">
-                Password
-            </label>
-
-            <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-                required
-            >
-
-            <button type="submit" class="login-button">
-                Login Securely
-            </button>
-
-        </form>
-
-        <p class="login-subtitle">
-            Contact your administrator if you need an account.
-        </p>
-
-    </div>
+      <p class="form-note">Need access? <strong>Contact your administrator</strong> to request an account.</p>
+      <div class="form-bottom"><span>AttendFlow Portal</span><span>Protected sign-in</span></div>
+    </section>
+  </main>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+    togglePassword.addEventListener('click', () => {
+      const showing = passwordInput.type === 'password';
+      passwordInput.type = showing ? 'text' : 'password';
+      togglePassword.textContent = showing ? 'Hide' : 'Show';
+      togglePassword.setAttribute('aria-label', showing ? 'Hide password' : 'Show password');
+    });
+    document.getElementById('loginForm').addEventListener('submit', () => {
+      const button = document.getElementById('loginButton');
+      button.disabled = true;
+      button.textContent = 'Signing in…';
+    });
+  </script>
 </body>
 </html>
