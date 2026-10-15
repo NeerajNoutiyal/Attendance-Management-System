@@ -1,356 +1,179 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Student Attendance Report</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: #f3f6fb;
-            color: #243247;
-            margin: 0;
-            padding: 25px;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: auto;
-        }
-
-        h1, h2 {
-            color: #174ea6;
-        }
-
-        h1 {
-            margin: 20px 0;
-        }
-
-        .card {
-            background: #ffffff;
-            padding: 25px;
-            margin: 20px 0;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px #00000010;
-        }
-
-        input, select, button, .button {
-            padding: 10px 14px;
-            border-radius: 6px;
-            border: 1px solid #ccd5e0;
-            font-size: 15px;
-        }
-
-        button, .button {
-            background: #1769d2;
-            color: #ffffff;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        button:hover, .button:hover {
-            background: #1254aa;
-        }
-
-        .back {
-            margin-bottom: 10px;
-        }
-
-        .logout {
-            background: #dc3545;
-        }
-
-        .logout:hover {
-            background: #b02a37;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .stat {
-            background: #eef5ff;
-            padding: 18px;
-            border-radius: 8px;
-        }
-
-        .number {
-            font-size: 26px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
-        .warning {
-            background: #fff0f0;
-            color: #a51d1d;
-            padding: 14px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .good {
-            background: #e8f7ed;
-            color: #176b35;
-            padding: 14px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .notice {
-            background: #eef5ff;
-            padding: 14px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #ffffff;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5eaf0;
-        }
-
-        th {
-            background: #eaf2ff;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-        }
-
-        .student-form {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .status-present {
-            color: #176b35;
-            font-weight: bold;
-        }
-
-        .status-absent {
-            color: #a51d1d;
-            font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 12px;
-            }
-
-            .card {
-                padding: 16px;
-            }
-
-            .student-form {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .student-form select,
-            .student-form button {
-                width: 100%;
-            }
-
-            th, td {
-                padding: 9px;
-            }
-        }
-    </style>
+    <title>Student Portal | AttendFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body>
-<div class="container">
-
-    <!-- Navigation -->
-    {% if session.get('role') == 'admin' %}
-        <a class="button back" href="{{ url_for('index') }}">
-            &larr; Back to Dashboard
+<body class="student-portal">
+    <aside class="student-sidebar">
+        <a href="{{ url_for('student_report') }}" class="student-brand">
+            <span class="brand-icon">✦</span>
+            <span>Attend<span class="brand-blue">Flow</span>
+                <small>Student Portal</small>
+            </span>
         </a>
-    {% elif session.get('role') == 'student' %}
-        <form action="{{ url_for('logout') }}" method="POST"
-              style="display: inline;">
-            <button type="submit" class="back logout">
-                Logout
-            </button>
-        </form>
-    {% endif %}
 
-    <h1>Student Attendance Report</h1>
+        <nav class="student-nav">
+            <a class="active" href="{{ url_for('student_report') }}">
+                <span>⌂</span> Dashboard
+            </a>
+            <a href="#attendance-history">
+                <span>▤</span> My Report
+            </a>
+        </nav>
 
-    <!-- Admin can select a student -->
-    {% if session.get('role') == 'admin' %}
-    <div class="card">
-        <h2>Select Student</h2>
-
-        <form class="student-form"
-              action="{{ url_for('student_report') }}"
-              method="GET">
-
-            <label for="roll_no">Student roll number:</label>
-
-            <select id="roll_no" name="roll_no" required>
-                <option value="">-- Select Student --</option>
-
-                {% for s in students %}
-                <option value="{{ s['roll_no'] }}"
-                    {% if student and student['roll_no'] == s['roll_no'] %}
-                        selected
-                    {% endif %}>
-                    {{ s['name'] }} ({{ s['roll_no'] }})
-                </option>
-                {% endfor %}
-            </select>
-
-            <button type="submit">View Report</button>
-        </form>
-    </div>
-    {% endif %}
-
-    <!-- Student details and attendance statistics -->
-    {% if student %}
-    <div class="card">
-
-        <h2>{{ student['name'] }}</h2>
-
-        <p>
-            <strong>Roll Number:</strong>
-            {{ student['roll_no'] }}
-        </p>
-
-        <p>
-            <strong>Course:</strong>
-            {{ student['course'] }}
-        </p>
-
-        <div class="stats">
-
-            <div class="stat">
-                <div>Total Classes</div>
-                <div class="number">{{ total_days }}</div>
-            </div>
-
-            <div class="stat">
-                <div>Present</div>
-                <div class="number">{{ present_days }}</div>
-            </div>
-
-            <div class="stat">
-                <div>Absent</div>
-                <div class="number">{{ absent_days }}</div>
-            </div>
-
-            <div class="stat">
-                <div>Attendance</div>
-                <div class="number">{{ attendance_percentage }}%</div>
-            </div>
-
+        <div class="student-sidebar-footer">
+            <p>✦ Better Attendance<br>&nbsp;&nbsp;&nbsp; Brighter Future</p>
+            <form action="{{ url_for('logout') }}" method="POST">
+                <button class="student-logout" type="submit">
+                    ↪ Logout
+                </button>
+            </form>
         </div>
+    </aside>
 
-        <!-- Attendance percentage message -->
-        {% if total_days == 0 %}
-
-            <div class="notice">
-                No attendance records are available for this student yet.
+    <main class="student-main">
+        <header class="student-topbar">
+            <div>
+                <span class="topbar-label">STUDENT WORKSPACE</span>
+                <strong>My Dashboard</strong>
             </div>
 
-        {% elif attendance_percentage < 75 %}
+            <div class="student-user">
+                <div class="student-avatar">
+                    {% if student %}{{ student['name'][0]|upper }}{% else %}S{% endif %}
+                </div>
+                <div>
+                    <strong>
+                        {% if student %}{{ student['roll_no'] }}{% else %}Student{% endif %}
+                    </strong>
+                    <small>Student Account</small>
+                </div>
+            </div>
+        </header>
 
-            <div class="warning">
-                <strong>Low Attendance Warning!</strong>
-                Attendance is below 75%. The student needs to attend
-                more classes to meet the required threshold.
+        <section class="student-content">
+            <div class="student-heading">
+                <span class="student-eyebrow">WELCOME BACK</span>
+                <h1>Student Attendance Report</h1>
+                <p>Track your attendance and stay up to date with your academic progress.</p>
             </div>
 
-        {% else %}
+            {% if student %}
+            <section class="student-profile-card">
+                <div class="profile-symbol">🎓</div>
+                <div class="profile-details">
+                    <h2>{{ student['name'] }}</h2>
+                    <p>Roll Number: <strong>{{ student['roll_no'] }}</strong></p>
+                    <p>Course: <strong>{{ student['course'] }}</strong></p>
+                </div>
+                <div class="profile-decoration">✦</div>
+            </section>
 
-            <div class="good">
-                <strong>Attendance Requirement Met.</strong>
-                The recorded attendance is at least 75%.
+            <section class="student-stats">
+                <article class="student-stat stat-blue">
+                    <div class="stat-icon">▦</div>
+                    <div>
+                        <p>Total Classes</p>
+                        <h2>{{ total_days }}</h2>
+                        <small>Recorded classes</small>
+                    </div>
+                </article>
+
+                <article class="student-stat stat-green">
+                    <div class="stat-icon">✓</div>
+                    <div>
+                        <p>Present</p>
+                        <h2>{{ present_days }}</h2>
+                        <small>Classes attended</small>
+                    </div>
+                </article>
+
+                <article class="student-stat stat-red">
+                    <div class="stat-icon">×</div>
+                    <div>
+                        <p>Absent</p>
+                        <h2>{{ absent_days }}</h2>
+                        <small>Classes missed</small>
+                    </div>
+                </article>
+
+                <article class="student-stat stat-purple">
+                    <div class="stat-icon">%</div>
+                    <div>
+                        <p>Attendance</p>
+                        <h2>{{ attendance_percentage }}%</h2>
+                        <small>Overall attendance</small>
+                    </div>
+                </article>
+            </section>
+
+            {% if total_days == 0 %}
+            <div class="student-notice">
+                <span>ⓘ</span>
+                No attendance records are available for you yet.
             </div>
+            {% endif %}
 
-        {% endif %}
+            <section class="student-history-card" id="attendance-history">
+                <div class="history-heading">
+                    <div class="history-icon">▦</div>
+                    <div>
+                        <h2>Attendance History</h2>
+                        <p>Your recorded attendance details.</p>
+                    </div>
+                </div>
 
-    </div>
+                {% if report %}
+                <div class="student-table-wrap">
+                    <table class="student-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in report %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ record['date'] }}</td>
+                                <td>
+                                    <span class="attendance-badge
+                                        {{ 'badge-present' if record['status'] == 'Present' else 'badge-absent' }}">
+                                        {{ record['status'] }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="student-empty-state">
+                    <div class="empty-icon">▤</div>
+                    <h3>No attendance history yet</h3>
+                    <p>Your attendance records will appear here once your teacher marks attendance.</p>
+                </div>
+                {% endif %}
+            </section>
 
-    <!-- Attendance history -->
-    <div class="card">
+            {% else %}
+            <section class="student-history-card">
+                <h2>Student profile unavailable</h2>
+                <p>Please log out and sign in again. If this continues, contact your administrator.</p>
+            </section>
+            {% endif %}
 
-        <h2>Attendance History</h2>
-
-        {% if report %}
-
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for record in report %}
-                    <tr>
-                        <td>{{ record['date'] }}</td>
-                        <td>
-                            {% if record['status'] == 'Present' %}
-                                <span class="status-present">
-                                    {{ record['status'] }}
-                                </span>
-                            {% else %}
-                                <span class="status-absent">
-                                    {{ record['status'] }}
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% else %}
-
-            <p>No attendance history found.</p>
-
-        {% endif %}
-
-    </div>
-
-    {% elif session.get('role') == 'admin' and request.args.get('roll_no') %}
-
-    <div class="card">
-        Student not found. Please select a valid student.
-    </div>
-
-    {% elif session.get('role') == 'admin' %}
-
-    <div class="card">
-        <p>Select a student above to view their attendance report.</p>
-    </div>
-
-    {% endif %}
-
-</div>
+            <footer class="student-footer">
+                AttendFlow · Student Portal · Keep learning, keep growing.
+            </footer>
+        </section>
+    </main>
 </body>
 </html>
