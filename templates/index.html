@@ -7,14 +7,32 @@
     <title>Attendance Management System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <header>
         <h1>Attendance Management System</h1>
         <p>TQM Project — Accurate, organized attendance records</p>
+
+        <form action="{{ url_for('logout') }}" method="POST">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
     </header>
 
     <main>
-        <!-- Dashboard Statistics -->
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Dashboard Statistics and Add Student -->
         <section class="card">
             <div class="stats-container">
                 <div class="stat-card total-card">
@@ -38,23 +56,35 @@
                 </div>
             </div>
 
-            <!-- Add Student -->
             <h2>Add Student</h2>
+
             <form action="{{ url_for('add_student') }}" method="POST">
-                <input type="text" name="name"
-                       placeholder="Student name" required>
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Student name"
+                    required
+                >
 
-                <input type="text" name="roll_no"
-                       placeholder="Roll number" required>
+                <input
+                    type="text"
+                    name="roll_no"
+                    placeholder="Roll number"
+                    required
+                >
 
-                <input type="text" name="course"
-                       placeholder="Course / Class" required>
+                <input
+                    type="text"
+                    name="course"
+                    placeholder="Course / Class"
+                    required
+                >
 
                 <button type="submit">Add Student</button>
             </form>
         </section>
 
-        <!-- Reports and Export -->
+        <!-- Reports and CSV Export -->
         <section class="card">
             <div class="report-link">
                 <a href="{{ url_for('student_report') }}">
@@ -68,99 +98,137 @@
                 </a>
             </div>
 
+            <!-- Expandable Student List -->
             <h2>Students and Attendance</h2>
 
             {% if students %}
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Roll Number</th>
-                            <th>Course</th>
-                            <th>Mark Attendance Today</th>
-                            <th>Edit Student</th>
-                            <th>Delete Student</th>
-                        </tr>
-                    </thead>
+                <div class="student-list">
+                    {% for student in students %}
+                        <details class="student-card">
+                            <summary class="student-name">
+                                <span>{{ student.name }}</span>
+                                <span class="student-arrow">View Details ▼</span>
+                            </summary>
 
-                    <tbody>
-                        {% for student in students %}
-                        <tr>
-                            <td>{{ student.name }}</td>
-                            <td>{{ student.roll_no }}</td>
-                            <td>{{ student.course }}</td>
+                            <div class="student-details">
+                                <div class="student-info">
+                                    <p>
+                                        <strong>Roll Number:</strong>
+                                        {{ student.roll_no }}
+                                    </p>
 
-                            <!-- Attendance Buttons -->
-                            <td>
-                                <form action="{{ url_for('mark_attendance') }}"
-                                      method="POST">
-                                    <input type="hidden"
-                                           name="student_id"
-                                           value="{{ student.id }}">
+                                    <p>
+                                        <strong>Course:</strong>
+                                        {{ student.course }}
+                                    </p>
+                                </div>
 
-                                    <button type="submit"
-                                            name="status"
-                                            value="Present">
+                                <!-- Mark Attendance -->
+                                <h3>Mark Attendance Today</h3>
+
+                                <form
+                                    action="{{ url_for('mark_attendance') }}"
+                                    method="POST"
+                                    class="attendance-form"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="student_id"
+                                        value="{{ student.id }}"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        name="status"
+                                        value="Present"
+                                    >
                                         Present
                                     </button>
 
-                                    <button type="submit"
-                                            name="status"
-                                            value="Absent"
-                                            class="absent">
+                                    <button
+                                        type="submit"
+                                        name="status"
+                                        value="Absent"
+                                        class="absent"
+                                    >
                                         Absent
                                     </button>
                                 </form>
-                            </td>
 
-                            <!-- Edit Student -->
-                            <td>
-                                <form action="{{ url_for('edit_student', student_id=student.id) }}"
-                                      method="POST">
-                                    <input type="text"
-                                           name="name"
-                                           value="{{ student.name }}"
-                                           placeholder="Name"
-                                           required>
+                                <!-- Edit Student Details -->
+                                <h3>Edit Student Details</h3>
 
-                                    <input type="text"
-                                           name="roll_no"
-                                           value="{{ student.roll_no }}"
-                                           placeholder="Roll number"
-                                           required>
+                                <form
+                                    action="{{ url_for('edit_student', student_id=student.id) }}"
+                                    method="POST"
+                                    class="edit-student-form"
+                                >
+                                    <label for="name-{{ student.id }}">
+                                        Student Name
+                                    </label>
 
-                                    <input type="text"
-                                           name="course"
-                                           value="{{ student.course }}"
-                                           placeholder="Course"
-                                           required>
+                                    <input
+                                        type="text"
+                                        id="name-{{ student.id }}"
+                                        name="name"
+                                        value="{{ student.name }}"
+                                        required
+                                    >
 
-                                    <button type="submit">Update</button>
-                                </form>
-                            </td>
+                                    <label for="roll-{{ student.id }}">
+                                        Roll Number
+                                    </label>
 
-                            <!-- Delete Student -->
-                            <td>
-                                <form action="{{ url_for('delete_student', student_id=student.id) }}"
-                                      method="POST"
-                                      onsubmit="return confirm('Delete this student and all their attendance records?');">
-                                    <button type="submit" class="absent">
-                                        Delete
+                                    <input
+                                        type="text"
+                                        id="roll-{{ student.id }}"
+                                        name="roll_no"
+                                        value="{{ student.roll_no }}"
+                                        required
+                                    >
+
+                                    <label for="course-{{ student.id }}">
+                                        Course / Class
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="course-{{ student.id }}"
+                                        name="course"
+                                        value="{{ student.course }}"
+                                        required
+                                    >
+
+                                    <button type="submit">
+                                        Update Details
                                     </button>
                                 </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+
+                                <!-- Delete Student -->
+                                <div class="delete-student">
+                                    <form
+                                        action="{{ url_for('delete_student', student_id=student.id) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Delete this student and all their attendance records?');"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="absent"
+                                        >
+                                            Delete Student
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
             {% else %}
                 <p>No students yet. Add your first student above.</p>
             {% endif %}
         </section>
 
-        <!-- Search and Filter -->
+        <!-- Search and Filter Attendance -->
         <section class="card">
             <h2>Search Attendance Records</h2>
 
@@ -179,6 +247,7 @@
                 >
 
                 <button type="submit">Search / Filter</button>
+
                 <a href="{{ url_for('index') }}">Clear Filters</a>
             </form>
 
@@ -186,29 +255,29 @@
             <h2>Recent Attendance</h2>
 
             {% if records %}
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Student</th>
-                            <th>Roll Number</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Student</th>
+                                <th>Roll Number</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        {% for record in records %}
-                        <tr>
-                            <td>{{ record.date }}</td>
-                            <td>{{ record.name }}</td>
-                            <td>{{ record.roll_no }}</td>
-                            <td>{{ record.status }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                        <tbody>
+                            {% for record in records %}
+                                <tr>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.name }}</td>
+                                    <td>{{ record.roll_no }}</td>
+                                    <td>{{ record.status }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
                 <p>No attendance has been recorded yet.</p>
             {% endif %}
@@ -216,12 +285,3 @@
     </main>
 </body>
 </html>
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="flash-message {{ category }}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
