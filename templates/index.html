@@ -1,287 +1,342 @@
 
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Management System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | Attendance Management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=2) }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-    <header>
-        <h1>Attendance Management System</h1>
-        <p>TQM Project — Accurate, organized attendance records</p>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark">A</span>
+      <span>Attend<span class="brand-light">Flow</span>
+        <small>MANAGEMENT PORTAL</small>
+      </span>
+    </a>
 
-        <form action="{{ url_for('logout') }}" method="POST">
-            <button type="submit" class="logout-btn">Logout</button>
-        </form>
+    <div class="nav-label">WORKSPACE</div>
+    <a class="nav-link active" href="{{ url_for('index') }}"><span>▦</span> Overview</a>
+    <a class="nav-link" href="#students"><span>♙</span> Students</a>
+    <a class="nav-link" href="#attendance"><span>▣</span> Attendance records</a>
+    <a class="nav-link" href="#charts"><span>◷</span> Analytics</a>
+
+    <div class="sidebar-bottom">
+      <div class="admin-card">
+        <div class="avatar">AD</div>
+        <div><strong>Administrator</strong><small>Admin / Teacher</small></div>
+      </div>
+      <form method="post" action="{{ url_for('logout') }}">
+        <button class="logout-btn" type="submit">↪ &nbsp; Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">☰</button>
+      <div class="breadcrumb">Workspace <span>/</span> <strong>Overview</strong></div>
+      <div class="top-actions">
+        <span class="today-pill">● System overview</span>
+        <button id="themeToggle" class="icon-btn" title="Toggle light/dark theme" aria-label="Toggle theme">◐</button>
+        <div class="avatar small-avatar">AD</div>
+      </div>
     </header>
 
-    <main>
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <section class="flash-container">
-                    {% for category, message in messages %}
-                        <div class="flash-message {{ category }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </section>
-            {% endif %}
-        {% endwith %}
+    <section class="page-heading">
+      <div>
+        <p class="eyebrow">ATTENDANCE MANAGEMENT</p>
+        <h1>Dashboard overview</h1>
+        <p class="muted">Welcome back. Here's what's happening with your students.</p>
+      </div>
+      <div class="heading-date">▦ &nbsp; {{ selected_date or 'Today' }}</div>
+    </section>
 
-        <!-- Dashboard Statistics and Add Student -->
-        <section class="card">
-            <div class="stats-container">
-                <div class="stat-card total-card">
-                    <h3>Total Students</h3>
-                    <p>{{ total_students }}</p>
-                </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
-                <div class="stat-card present-card">
-                    <h3>Present Today</h3>
-                    <p>{{ present_today }}</p>
-                </div>
+    <section class="stats-grid">
+      <article class="stat-card">
+        <div class="stat-top"><span>Total students</span><span class="stat-icon blue">♙</span></div>
+        <div class="stat-number">{{ total_students }}</div>
+        <div class="stat-foot">Registered in the system</div>
+        <div class="stat-bar blue-bar"></div>
+      </article>
 
-                <div class="stat-card absent-card">
-                    <h3>Absent Today</h3>
-                    <p>{{ absent_today }}</p>
-                </div>
+      <article class="stat-card">
+        <div class="stat-top"><span>Present today</span><span class="stat-icon green">✓</span></div>
+        <div class="stat-number">{{ present_today }}</div>
+        <div class="stat-foot"><span class="dot green-dot"></span> Marked present today</div>
+        <div class="stat-bar green-bar"></div>
+      </article>
 
-                <div class="stat-card rate-card">
-                    <h3>Attendance Rate</h3>
-                    <p>{{ attendance_rate }}%</p>
-                </div>
-            </div>
+      <article class="stat-card">
+        <div class="stat-top"><span>Absent today</span><span class="stat-icon red">×</span></div>
+        <div class="stat-number">{{ absent_today }}</div>
+        <div class="stat-foot"><span class="dot red-dot"></span> Marked absent today</div>
+        <div class="stat-bar red-bar"></div>
+      </article>
 
-            <h2>Add Student</h2>
+      <article class="stat-card">
+        <div class="stat-top"><span>Attendance rate</span><span class="stat-icon purple">◷</span></div>
+        <div class="stat-number">{{ attendance_rate }}<small>%</small></div>
+        <div class="stat-foot">Present ÷ total students today</div>
+        <div class="stat-bar purple-bar"></div>
+      </article>
+    </section>
 
-            <form action="{{ url_for('add_student') }}" method="POST">
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Student name"
-                    required
-                >
+    <section class="chart-grid" id="charts">
+      <article class="panel chart-panel">
+        <div class="panel-heading">
+          <div><h2>Attendance snapshot</h2><p class="muted">Today's recorded attendance</p></div>
+          <span class="panel-tag">TODAY</span>
+        </div>
+        <div class="donut-wrap">
+          <canvas id="attendanceChart" aria-label="Present and absent chart"></canvas>
+          <div class="donut-center">
+            <strong>{{ present_today + absent_today }}</strong><span>Records</span>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="legend-dot present"></i>Present <b>{{ present_today }}</b></span>
+          <span><i class="legend-dot absent"></i>Absent <b>{{ absent_today }}</b></span>
+          <span><i class="legend-dot unmarked"></i>Not marked <b>{{ [total_students - present_today - absent_today, 0]|max }}</b></span>
+        </div>
+      </article>
 
-                <input
-                    type="text"
-                    name="roll_no"
-                    placeholder="Roll number"
-                    required
-                >
+      <article class="panel chart-panel">
+        <div class="panel-heading">
+          <div><h2>Weekly attendance trend</h2><p class="muted">Recorded present and absent entries</p></div>
+          <span class="panel-tag">LAST 7 DAYS</span>
+        </div>
+        <div class="line-chart-wrap"><canvas id="weeklyChart" aria-label="Weekly attendance trend"></canvas></div>
+      </article>
+    </section>
 
-                <input
-                    type="text"
-                    name="course"
-                    placeholder="Course / Class"
-                    required
-                >
+    <section class="panel" id="attendance">
+      <div class="panel-heading section-heading">
+        <div><h2>Recent attendance</h2><p class="muted">Search and filter recorded attendance</p></div>
+        <a class="button button-secondary" href="{{ url_for('export_attendance') }}">↓ Export CSV</a>
+      </div>
 
-                <button type="submit">Add Student</button>
-            </form>
-        </section>
+      <form class="filter-row" method="get" action="{{ url_for('index') }}">
+        <label class="search-box"><span>⌕</span>
+          <input type="search" name="search" value="{{ search }}" placeholder="Search name or roll number">
+        </label>
+        <label class="date-filter">Date
+          <input type="date" name="date" value="{{ selected_date }}">
+        </label>
+        <button class="button button-primary" type="submit">Apply filters</button>
+        <a class="button button-ghost" href="{{ url_for('index') }}">Reset</a>
+      </form>
 
-        <!-- Reports and CSV Export -->
-        <section class="card">
-            <div class="report-link">
-                <a href="{{ url_for('student_report') }}">
-                    View Student Attendance Reports
-                </a>
-            </div>
-
-            <div class="report-link">
-                <a href="{{ url_for('export_attendance') }}">
-                    Download Attendance CSV
-                </a>
-            </div>
-
-            <!-- Expandable Student List -->
-            <h2>Students and Attendance</h2>
-
-            {% if students %}
-                <div class="student-list">
-                    {% for student in students %}
-                        <details class="student-card">
-                            <summary class="student-name">
-                                <span>{{ student.name }}</span>
-                                <span class="student-arrow">View Details ▼</span>
-                            </summary>
-
-                            <div class="student-details">
-                                <div class="student-info">
-                                    <p>
-                                        <strong>Roll Number:</strong>
-                                        {{ student.roll_no }}
-                                    </p>
-
-                                    <p>
-                                        <strong>Course:</strong>
-                                        {{ student.course }}
-                                    </p>
-                                </div>
-
-                                <!-- Mark Attendance -->
-                                <h3>Mark Attendance Today</h3>
-
-                                <form
-                                    action="{{ url_for('mark_attendance') }}"
-                                    method="POST"
-                                    class="attendance-form"
-                                >
-                                    <input
-                                        type="hidden"
-                                        name="student_id"
-                                        value="{{ student.id }}"
-                                    >
-
-                                    <button
-                                        type="submit"
-                                        name="status"
-                                        value="Present"
-                                    >
-                                        Present
-                                    </button>
-
-                                    <button
-                                        type="submit"
-                                        name="status"
-                                        value="Absent"
-                                        class="absent"
-                                    >
-                                        Absent
-                                    </button>
-                                </form>
-
-                                <!-- Edit Student Details -->
-                                <h3>Edit Student Details</h3>
-
-                                <form
-                                    action="{{ url_for('edit_student', student_id=student.id) }}"
-                                    method="POST"
-                                    class="edit-student-form"
-                                >
-                                    <label for="name-{{ student.id }}">
-                                        Student Name
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="name-{{ student.id }}"
-                                        name="name"
-                                        value="{{ student.name }}"
-                                        required
-                                    >
-
-                                    <label for="roll-{{ student.id }}">
-                                        Roll Number
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="roll-{{ student.id }}"
-                                        name="roll_no"
-                                        value="{{ student.roll_no }}"
-                                        required
-                                    >
-
-                                    <label for="course-{{ student.id }}">
-                                        Course / Class
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="course-{{ student.id }}"
-                                        name="course"
-                                        value="{{ student.course }}"
-                                        required
-                                    >
-
-                                    <button type="submit">
-                                        Update Details
-                                    </button>
-                                </form>
-
-                                <!-- Delete Student -->
-                                <div class="delete-student">
-                                    <form
-                                        action="{{ url_for('delete_student', student_id=student.id) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Delete this student and all their attendance records?');"
-                                    >
-                                        <button
-                                            type="submit"
-                                            class="absent"
-                                        >
-                                            Delete Student
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </details>
-                    {% endfor %}
-                </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>STUDENT</th><th>ROLL NUMBER</th><th>DATE</th><th>STATUS</th></tr></thead>
+          <tbody>
+            {% for record in records %}
+            <tr>
+              <td><div class="student-cell"><span class="student-avatar">{{ record['name'][:1]|upper }}</span><strong>{{ record['name'] }}</strong></div></td>
+              <td class="mono">{{ record['roll_no'] }}</td>
+              <td>{{ record['date'] }}</td>
+              <td><span class="status {{ 'status-present' if record['status'] == 'Present' else 'status-absent' }}">{{ record['status'] }}</span></td>
+            </tr>
             {% else %}
-                <p>No students yet. Add your first student above.</p>
-            {% endif %}
-        </section>
+            <tr><td colspan="4" class="empty-state">No attendance records match your filters.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">Showing up to 100 matching records</div>
+    </section>
 
-        <!-- Search and Filter Attendance -->
-        <section class="card">
-            <h2>Search Attendance Records</h2>
+    <section class="panel students-panel" id="students">
+      <div class="panel-heading section-heading">
+        <div><h2>Student directory</h2><p class="muted">Manage student details and mark today's attendance</p></div>
+        <button class="button button-primary" id="showAddStudent">＋ Add student</button>
+      </div>
 
-            <form method="GET" action="{{ url_for('index') }}">
-                <input
-                    type="text"
-                    name="search"
-                    placeholder="Search student name or roll number"
-                    value="{{ search }}"
-                >
+      <form class="add-student-form" id="addStudentForm" method="post" action="{{ url_for('add_student') }}" hidden>
+        <h3>Add a student</h3>
+        <div class="form-grid">
+          <label>Full name<input name="name" required placeholder="Student name"></label>
+          <label>Roll number<input name="roll_no" required placeholder="e.g. STU002"></label>
+          <label>Course / class<input name="course" required placeholder="e.g. B.Tech CSE"></label>
+          <label>Initial password (optional)<input type="password" name="student_password" placeholder="Leave blank to generate"></label>
+        </div>
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">Save student</button>
+          <button class="button button-ghost" type="button" id="cancelAddStudent">Cancel</button>
+        </div>
+      </form>
 
-                <input
-                    type="date"
-                    name="date"
-                    value="{{ selected_date }}"
-                >
+      <label class="directory-search">⌕ <input id="studentSearch" type="search" placeholder="Filter student directory..."></label>
 
-                <button type="submit">Search / Filter</button>
-
-                <a href="{{ url_for('index') }}">Clear Filters</a>
-            </form>
-
-            <!-- Recent Attendance -->
-            <h2>Recent Attendance</h2>
-
-            {% if records %}
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Student</th>
-                                <th>Roll Number</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for record in records %}
-                                <tr>
-                                    <td>{{ record.date }}</td>
-                                    <td>{{ record.name }}</td>
-                                    <td>{{ record.roll_no }}</td>
-                                    <td>{{ record.status }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+      <div class="table-wrap">
+        <table id="studentsTable">
+          <thead><tr><th>STUDENT</th><th>ROLL NUMBER</th><th>COURSE</th><th>ACCOUNT</th><th>MARK TODAY</th><th>REPORT</th><th>MANAGE</th></tr></thead>
+          <tbody>
+            {% for student in students %}
+            <tr class="student-row">
+              <td><div class="student-cell"><span class="student-avatar">{{ student['name'][:1]|upper }}</span><strong>{{ student['name'] }}</strong></div></td>
+              <td class="mono">{{ student['roll_no'] }}</td>
+              <td>{{ student['course'] }}</td>
+              <td>{% if student['has_account'] %}<span class="status status-present">Enabled</span>{% else %}<span class="status status-absent">No account</span>{% endif %}</td>
+              <td>
+                <form class="mark-form" method="post" action="{{ url_for('mark_attendance') }}">
+                  <input type="hidden" name="student_id" value="{{ student['id'] }}">
+                  <select name="status" aria-label="Attendance status for {{ student['name'] }}">
+                    <option value="Present">Present</option><option value="Absent">Absent</option>
+                  </select>
+                  <button class="mini-submit" type="submit">Save</button>
+                </form>
+              </td>
+              <td><a class="text-link" href="{{ url_for('student_report', roll_no=student['roll_no']) }}">View report ↗</a></td>
+              <td>
+                <details class="manage-details">
+                  <summary>Manage</summary>
+                  <div class="manage-pop">
+                    <form method="post" action="{{ url_for('edit_student', student_id=student['id']) }}">
+                      <label>Name<input name="name" required value="{{ student['name'] }}"></label>
+                      <label>Roll no.<input name="roll_no" required value="{{ student['roll_no'] }}"></label>
+                      <label>Course<input name="course" required value="{{ student['course'] }}"></label>
+                      <button class="button button-primary" type="submit">Update</button>
+                    </form>
+                    <form method="post" action="{{ url_for('delete_student', student_id=student['id']) }}" onsubmit="return confirm('Delete this student and their attendance records? This cannot be undone.');">
+                      <button class="button button-danger" type="submit">Delete student</button>
+                    </form>
+                  </div>
+                </details>
+              </td>
+            </tr>
             {% else %}
-                <p>No attendance has been recorded yet.</p>
-            {% endif %}
-        </section>
-    </main>
+            <tr><td colspan="7" class="empty-state">No students yet. Add your first student above.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer">Attendance Management System <span>•</span> Built with Flask &amp; SQLite</footer>
+  </main>
+</div>
+
+<script>
+  const present = {{ present_today|tojson }};
+  const absent = {{ absent_today|tojson }};
+  const total = {{ total_students|tojson }};
+  const unmarked = Math.max(total - present - absent, 0);
+
+  const chartColors = {
+    present: '#16a878',
+    absent: '#f06464',
+    unmarked: '#e6eaf1'
+  };
+
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, sans-serif';
+    Chart.defaults.color = '#8791a5';
+
+    new Chart(document.getElementById('attendanceChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Present', 'Absent', 'Not marked'],
+        datasets: [{
+          data: [present, absent, unmarked],
+          backgroundColor: [chartColors.present, chartColors.absent, chartColors.unmarked],
+          borderWidth: 0,
+          hoverOffset: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '76%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    const weeklyLabels = {{ weekly_labels|default([], true)|tojson }};
+    const weeklyPresent = {{ weekly_present|default([], true)|tojson }};
+    const weeklyAbsent = {{ weekly_absent|default([], true)|tojson }};
+
+    new Chart(document.getElementById('weeklyChart'), {
+      type: 'line',
+      data: {
+        labels: weeklyLabels,
+        datasets: [
+          {
+            label: 'Present',
+            data: weeklyPresent,
+            borderColor: chartColors.present,
+            backgroundColor: 'rgba(22,168,120,.10)',
+            fill: true,
+            tension: .38
+          },
+          {
+            label: 'Absent',
+            data: weeklyAbsent,
+            borderColor: chartColors.absent,
+            backgroundColor: 'rgba(240,100,100,.04)',
+            fill: false,
+            tension: .38
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { precision: 0 } }
+        }
+      }
+    });
+  }
+
+  const root = document.documentElement;
+  const savedTheme = localStorage.getItem('attendance-theme');
+  if (savedTheme === 'dark' || savedTheme === 'light') {
+    root.dataset.theme = savedTheme;
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('attendance-theme', root.dataset.theme);
+  });
+
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('sidebar-open');
+  });
+
+  document.getElementById('showAddStudent').addEventListener('click', () => {
+    const form = document.getElementById('addStudentForm');
+    form.hidden = !form.hidden;
+    if (!form.hidden) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  document.getElementById('cancelAddStudent').addEventListener('click', () => {
+    document.getElementById('addStudentForm').hidden = true;
+  });
+
+  document.getElementById('studentSearch').addEventListener('input', event => {
+    const query = event.target.value.toLowerCase();
+    document.querySelectorAll('#studentsTable .student-row').forEach(row => {
+      row.hidden = !row.innerText.toLowerCase().includes(query);
+    });
+  });
+</script>
 </body>
 </html>
