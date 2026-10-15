@@ -1,24 +1,46 @@
-
 import csv
+import os
 import sqlite3
+from datetime import date
+from functools import wraps
 from io import StringIO
 from pathlib import Path
-from datetime import date
 
-from flask import (
+from flask import ( 
     Flask,
+    Response,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
+    session,
     url_for,
-    Response,
-    flash
 )
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "change-this-to-a-random-secret-key"
+
+# Configure these in your environment; never hardcode production secrets.
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
+ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH")
+
+if not app.secret_key:
+    raise RuntimeError(
+        "FLASK_SECRET_KEY is missing. Configure it in your environment before starting the app."
+    )
 
 DB_PATH = Path(__file__).with_name("attendance.db")
+
+
+def login_required(view_function):
+    @wraps(view_function)
+    def wrapped_view(*args, **kwargs):
+        if not session.get("admin_logged_in"):
+            return redirect(url_for("login"))
+        return view_function(*args, **kwargs)
+
+    return wrapped_view
 
 
 def get_db():
@@ -30,40 +52,72 @@ def get_db():
 
 def initialize_db():
     with get_db() as db:
-        db.execute("""
+        db.execute(
+            """
             CREATE TABLE IF NOT EXISTS students (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 roll_no TEXT NOT NULL UNIQUE,
                 course TEXT NOT NULL
             )
-        """)
-
-        db.execute("""
+            """
+        )
+        db.execute(
+            """
             CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 student_id INTEGER NOT NULL,
                 date TEXT NOT NULL,
-                status TEXT NOT NULL
-                    CHECK(status IN ('Present', 'Absent')),
+                status TEXT NOT NULL CHECK(status IN ('Present', 'Absent')),
                 UNIQUE(student_id, date),
-                FOREIGN KEY(student_id)
-                    REFERENCES students(id)
-                    ON DELETE CASCADE
+                FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
             )
-        """)
+            """
+        )
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("admin_logged_in"):
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not ADMIN_USERNAME or not ADMIN_PASSWORD_HASH:
+            flash("Admin login is not configured. Contact the administrator.", "error")
+            return render_template("login.html"), 503
+
+        if username == ADMIN_USERNAME and check_password_hash(
+            ADMIN_PASSWORD_HASH, password
+        ):
+            session.clear()
+            session["admin_logged_in"] = True
+            return redirect(url_for("index"))
+
+        flash("Invalid username or password.", "error")
+
+    return render_template("login.html")
+
+
+@app.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
 
 
 @app.route("/")
+@login_required
 def index():
     today = date.today().isoformat()
     selected_date = request.args.get("date", "").strip()
     search = request.args.get("search", "").strip()
 
     with get_db() as db:
-        students = db.execute(
-            "SELECT * FROM students ORDER BY name"
-        ).fetchall()
+        students = db.execute("SELECT * FROM students ORDER BY name").fetchall()
 
         query = """
             SELECT a.date, a.status, s.name, s.roll_no
@@ -87,20 +141,17 @@ def index():
         total_students = db.execute(
             "SELECT COUNT(*) FROM students"
         ).fetchone()[0]
-
-        present_today = db.execute("""
-            SELECT COUNT(*) FROM attendance
-            WHERE date = ? AND status = 'Present'
-        """, (today,)).fetchone()[0]
-
-        absent_today = db.execute("""
-            SELECT COUNT(*) FROM attendance
-            WHERE date = ? AND status = 'Absent'
-        """, (today,)).fetchone()[0]
+        present_today = db.execute(
+            "SELECT COUNT(*) FROM attendance WHERE date = ? AND status = 'Present'",
+            (today,),
+        ).fetchone()[0]
+        absent_today = db.execute(
+            "SELECT COUNT(*) FROM attendance WHERE date = ? AND status = 'Absent'",
+            (today,),
+        ).fetchone()[0]
 
     attendance_rate = (
-        round(present_today / total_students * 100, 2)
-        if total_students else 0
+        round(present_today / total_students * 100, 2) if total_students else 0
     )
 
     return render_template(
@@ -112,11 +163,12 @@ def index():
         absent_today=absent_today,
         attendance_rate=attendance_rate,
         selected_date=selected_date,
-        search=search
+        search=search,
     )
 
 
 @app.route("/add_student", methods=["POST"])
+@login_required
 def add_student():
     name = request.form.get("name", "").strip()
     roll_no = request.form.get("roll_no", "").strip()
@@ -128,13 +180,11 @@ def add_student():
 
     try:
         with get_db() as db:
-            db.execute("""
-                INSERT INTO students (name, roll_no, course)
-                VALUES (?, ?, ?)
-            """, (name, roll_no, course))
-
+            db.execute(
+                "INSERT INTO students (name, roll_no, course) VALUES (?, ?, ?)",
+                (name, roll_no, course),
+            )
         flash("Student added successfully!", "success")
-
     except sqlite3.IntegrityError:
         flash("That roll number already exists.", "error")
 
@@ -142,6 +192,7 @@ def add_student():
 
 
 @app.route("/edit_student/<int:student_id>", methods=["POST"])
+@login_required
 def edit_student(student_id):
     name = request.form.get("name", "").strip()
     roll_no = request.form.get("roll_no", "").strip()
@@ -153,17 +204,18 @@ def edit_student(student_id):
 
     try:
         with get_db() as db:
-            cursor = db.execute("""
+            cursor = db.execute(
+                """
                 UPDATE students
                 SET name = ?, roll_no = ?, course = ?
                 WHERE id = ?
-            """, (name, roll_no, course, student_id))
-
+                """,
+                (name, roll_no, course, student_id),
+            )
             if cursor.rowcount == 0:
                 flash("Student not found.", "error")
             else:
                 flash("Student details updated successfully!", "success")
-
     except sqlite3.IntegrityError:
         flash("That roll number is already assigned to another student.", "error")
 
@@ -171,25 +223,24 @@ def edit_student(student_id):
 
 
 @app.route("/delete_student/<int:student_id>", methods=["POST"])
+@login_required
 def delete_student(student_id):
     with get_db() as db:
-        cursor = db.execute(
-            "DELETE FROM students WHERE id = ?",
-            (student_id,)
-        )
+        # Explicit deletion also handles databases created before ON DELETE CASCADE
+        # was added to the attendance table.
+        db.execute("DELETE FROM attendance WHERE student_id = ?", (student_id,))
+        cursor = db.execute("DELETE FROM students WHERE id = ?", (student_id,))
 
-        if cursor.rowcount == 0:
-            flash("Student not found.", "error")
-        else:
-            flash(
-                "Student and their attendance records deleted.",
-                "success"
-            )
+    if cursor.rowcount == 0:
+        flash("Student not found.", "error")
+    else:
+        flash("Student and their attendance records deleted.", "success")
 
     return redirect(url_for("index"))
 
 
 @app.route("/mark_attendance", methods=["POST"])
+@login_required
 def mark_attendance():
     student_id = request.form.get("student_id", type=int)
     status = request.form.get("status", "")
@@ -200,29 +251,31 @@ def mark_attendance():
 
     with get_db() as db:
         student = db.execute(
-            "SELECT id FROM students WHERE id = ?",
-            (student_id,)
+            "SELECT id FROM students WHERE id = ?", (student_id,)
         ).fetchone()
 
         if student is None:
             flash("Student not found.", "error")
             return redirect(url_for("index"))
 
-        db.execute("""
+        db.execute(
+            """
             INSERT INTO attendance (student_id, date, status)
             VALUES (?, ?, ?)
             ON CONFLICT(student_id, date)
             DO UPDATE SET status = excluded.status
-        """, (student_id, date.today().isoformat(), status))
+            """,
+            (student_id, date.today().isoformat(), status),
+        )
 
     flash(f"Attendance marked: {status}.", "success")
     return redirect(url_for("index"))
 
 
 @app.route("/student_report")
+@login_required
 def student_report():
     roll_no = request.args.get("roll_no", "").strip()
-
     report = []
     student = None
     total_days = 0
@@ -231,37 +284,38 @@ def student_report():
     attendance_percentage = 0
 
     with get_db() as db:
-        students = db.execute("""
-            SELECT id, name, roll_no, course
-            FROM students
-            ORDER BY name
-        """).fetchall()
+        students = db.execute(
+            "SELECT id, name, roll_no, course FROM students ORDER BY name"
+        ).fetchall()
 
         if roll_no:
-            student = db.execute("""
+            student = db.execute(
+                """
                 SELECT id, name, roll_no, course
                 FROM students
                 WHERE roll_no = ?
-            """, (roll_no,)).fetchone()
+                """,
+                (roll_no,),
+            ).fetchone()
 
             if student:
-                report = db.execute("""
+                report = db.execute(
+                    """
                     SELECT date, status
                     FROM attendance
                     WHERE student_id = ?
                     ORDER BY date DESC
-                """, (student["id"],)).fetchall()
+                    """,
+                    (student["id"],),
+                ).fetchall()
 
                 total_days = len(report)
                 present_days = sum(
-                    1 for record in report
-                    if record["status"] == "Present"
+                    1 for record in report if record["status"] == "Present"
                 )
                 absent_days = sum(
-                    1 for record in report
-                    if record["status"] == "Absent"
+                    1 for record in report if record["status"] == "Absent"
                 )
-
                 if total_days:
                     attendance_percentage = round(
                         present_days / total_days * 100, 2
@@ -275,43 +329,44 @@ def student_report():
         total_days=total_days,
         present_days=present_days,
         absent_days=absent_days,
-        attendance_percentage=attendance_percentage
+        attendance_percentage=attendance_percentage,
     )
 
 
 @app.route("/export_attendance")
+@login_required
 def export_attendance():
     output = StringIO()
     writer = csv.writer(output)
-
-    writer.writerow([
-        "Date", "Student Name", "Roll Number", "Course", "Status"
-    ])
+    writer.writerow(["Date", "Student Name", "Roll Number", "Course", "Status"])
 
     with get_db() as db:
-        records = db.execute("""
+        records = db.execute(
+            """
             SELECT a.date, s.name, s.roll_no, s.course, a.status
             FROM attendance a
             JOIN students s ON s.id = a.student_id
             ORDER BY a.date DESC, s.name
-        """).fetchall()
+            """
+        ).fetchall()
 
         for record in records:
-            writer.writerow([
-                record["date"],
-                record["name"],
-                record["roll_no"],
-                record["course"],
-                record["status"]
-            ])
+            writer.writerow(
+                [
+                    record["date"],
+                    record["name"],
+                    record["roll_no"],
+                    record["course"],
+                    record["status"],
+                ]
+            )
 
     return Response(
         "\ufeff" + output.getvalue(),
         mimetype="text/csv",
         headers={
-            "Content-Disposition":
-                "attachment; filename=attendance_report.csv"
-        }
+            "Content-Disposition": "attachment; filename=attendance_report.csv"
+        },
     )
 
 
