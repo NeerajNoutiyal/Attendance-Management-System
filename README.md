@@ -89,12 +89,13 @@ Attendance-Management-System/
 └── source-code/
 ```
 
-## ▶️ Installation
+## ▶️ Installation and Setup
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/NeerajNoutiyal/Attendance-Management-System.git
 cd Attendance-Management-System
-```
 
 Install the required dependencies according to the project's technology stack.
 
