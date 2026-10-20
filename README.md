@@ -69,11 +69,11 @@ The system can reduce proxy attendance through:
 
 ## 🛠️ Technologies Used
 
- **Backend:** Python, Flask
- **Database:** SQLite
- **Frontend:** HTML, CSS
- **Server (deployment):** Gunicorn
- **Version Control:** Git and GitHub
+- **Backend:** Python, Flask
+- **Database:** SQLite
+- **Frontend:** HTML, CSS
+- **Server (deployment):** Gunicorn
+- **Version Control:** Git and GitHub
 
 ## 📂 Project Structure
 
