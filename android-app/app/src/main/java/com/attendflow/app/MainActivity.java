@@ -32,9 +32,9 @@ public class MainActivity extends Activity {
         layout.addView(webView);
         setContentView(layout);
 
-        webView.loadUrl(
-            "https://friendly-goldfish-r4w4gg77g77535gr4-5000.app.github.dev/"
-        );
+        webView.loadUrl("https://friendly-goldfish-r4w4gg77g77535gr4-5000.app.github.dev/");
+
+
     }
 
     @Override
