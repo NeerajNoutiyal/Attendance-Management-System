@@ -23,6 +23,14 @@ class AttendanceAppTests(unittest.TestCase):
         response = self.client.post("/logout", follow_redirects=False)
         self.assertEqual(response.status_code, 302)
 
+    def test_logout_redirects_to_login(self):
+        response = self.client.post(
+        "/logout",
+        follow_redirects=False
+    )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login", response.headers["Location"])
 
 if __name__ == "__main__":
     unittest.main()
