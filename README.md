@@ -89,6 +89,7 @@ Attendance-Management-System/
 └── source-code/
 ```
 
+
 ## ▶️ Installation and Setup
 
 ### 1. Clone the repository
@@ -96,8 +97,32 @@ Attendance-Management-System/
 ```bash
 git clone https://github.com/NeerajNoutiyal/Attendance-Management-System.git
 cd Attendance-Management-System
+```
 
-Install the required dependencies according to the project's technology stack.
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure environment variables
+
+Set these variables before starting the application:
+
+- `FLASK_SECRET_KEY`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD_HASH`
+
+Never publish passwords or secret values.
+
+### 4. Run the application
+
+```bash
+python app.py
+```
+
+Open the local URL shown in the terminal.
+
 
 ## 💻 Usage
 
