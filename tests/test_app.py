@@ -7,6 +7,10 @@ from app import app
 
 class AttendanceAppTests(unittest.TestCase):
 
+    def test_home_requires_login(self):
+        response = self.client.get("/", follow_redirects=False)
+        self.assertIn(response.status_code, (302, 401))
+
     def setUp(self):
         app.config["TESTING"] = True
         self.client = app.test_client()
