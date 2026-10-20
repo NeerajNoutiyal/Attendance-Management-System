@@ -32,5 +32,14 @@ class AttendanceAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.headers["Location"])
 
+    def test_login_page_returns_html(self):
+        response = self.client.get("/login")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.content_type)
+
+
+
+
 if __name__ == "__main__":
     unittest.main()
