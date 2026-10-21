@@ -62,7 +62,7 @@ def initialize_db():
                 FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
             )
         """)
-
+initialize_db()
 
 def admin_required(view_function):
     @wraps(view_function)
@@ -349,5 +349,4 @@ def export_attendance():
 
 
 if __name__ == "__main__":
-    initialize_db()
     app.run(host="0.0.0.0", port=5000, debug=False)
