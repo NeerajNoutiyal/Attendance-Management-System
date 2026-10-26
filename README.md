@@ -261,31 +261,6 @@ The following documents provide additional information about the project.
 - Improve readability and maintainability.
 - Keep documentation consistent with the actual application.
 
-## 📸 Screenshots
-
-Screenshots of the running application should be added to demonstrate its interface and main features.
-
-Recommended screenshots:
-
-1. Admin login page.
-2. Admin dashboard.
-3. Student management page.
-4. Attendance management page.
-5. Attendance report.
-6. CSV export result.
-7. Help/FAQ page.
-8. About page.
-
-Save genuine screenshots in a `screenshots/` directory and embed them here after adding the image files to the repository.
-
-Example:
-
-```markdown
-![Admin Dashboard](screenshots/admin-dashboard.png)
-```
-
-Do not use this image link until the corresponding screenshot exists.
-
 ## ❓ Troubleshooting
 
 | Problem | Suggested solution |
