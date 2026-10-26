@@ -617,6 +617,17 @@ def export_attendance():
 # 12. APPLICATION ENTRY POINT
 # --------------------------------------------------
 
+# Display the Help and FAQ page.
+@app.route("/help")
+def help_page():
+    return render_template("help.html")
+
+
+# Display information about the AttendFlow project.
+@app.route("/about")
+def about_page():
+    return render_template("about.html")
+
 if __name__ == "__main__":
     # Start the Flask development server when this file runs directly.
     # Debug mode remains disabled, as in the original application.
